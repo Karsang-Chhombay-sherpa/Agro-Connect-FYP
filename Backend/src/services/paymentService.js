@@ -16,13 +16,20 @@ class PaymentService {
   constructor() {
     this.merchantId = process.env.ESEWA_MERCHANT_ID;
     this.secretKey = process.env.ESEWA_SECRET_KEY;
-    this.successUrl = process.env.ESEWA_SUCCESS_URL;
-    this.failureUrl = process.env.ESEWA_FAILURE_URL;
     this.paymentUrl = process.env.ESEWA_PAYMENT_URL;
     this.verificationUrl = process.env.ESEWA_VERIFICATION_URL;
     this.commissionRate = parseFloat(process.env.PLATFORM_COMMISSION_RATE) || 0.05;
     this.testMode = process.env.ESEWA_TEST_MODE === 'true';
     this.forceTestMode = process.env.ESEWA_FORCE_TEST_MODE === 'true';
+  }
+
+  // Read URLs dynamically so Render env var changes take effect without restart
+  get successUrl() {
+    return process.env.ESEWA_SUCCESS_URL;
+  }
+
+  get failureUrl() {
+    return process.env.ESEWA_FAILURE_URL;
   }
 
   /**

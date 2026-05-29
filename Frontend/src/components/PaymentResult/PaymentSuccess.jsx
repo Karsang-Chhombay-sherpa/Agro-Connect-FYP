@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import styles from './PaymentResult.module.css';
 
 export default function PaymentSuccess() {
@@ -9,84 +8,70 @@ export default function PaymentSuccess() {
   const [status, setStatus] = useState('verifying');
 
   useEffect(() => {
-    verifyAndProcess();
+    processPaymentResult();
   }, []);
 
-  const verifyAndProcess = async () => {
+  const processPaymentResult = () => {
     try {
-      // eSewa V2 sends base64-encoded data in 'data' param
-      const encodedData = searchParams.get('data');
+      const paymentId   = searchParams.get('paymentId');
+      const type        = searchParams.get('type');
+      const error       = searchParams.get('error');
+      const encodedData = searchParams.get('data'); // raw eSewa V2 redirect (edge case)
 
-      // Also check for legacy params (from simulate success or old flow)
-      const paymentId = searchParams.get('paymentId');
-      const transactionId = searchParams.get('transactionId');
-      const amount = searchParams.get('amount');
-      const type = searchParams.get('type');
+      console.log('PaymentSuccess — URL params:', { paymentId, type, error, hasData: !!encodedData });
 
-      console.log('PaymentSuccess loaded, URL params:', {
-        hasData: !!encodedData,
-        paymentId,
-        transactionId,
-        amount,
-        type
-      });
-
-      // If we have encoded eSewa V2 data, decode and process it
-      if (encodedData) {
-        try {
-          const decodedData = JSON.parse(atob(encodedData));
-          console.log('Decoded eSewa data:', decodedData);
-
-          const { transaction_uuid, transaction_code, total_amount, status: esewaStatus } = decodedData;
-
-          if (esewaStatus !== 'COMPLETE') {
-            console.error('Payment status not COMPLETE:', esewaStatus);
-            setStatus('failed');
-            setTimeout(() => navigate(`/payment/failure?error=payment_cancelled&paymentId=${transaction_uuid}`, { replace: true }), 1500);
-            return;
-          }
-
-          // Call the existing backend success endpoint with the decoded data
-          const response = await axios.get(`/api/payments/success`, {
-            params: { data: encodedData }
-          });
-
-          // Backend redirects, so if we get here it worked
-          handleSuccess(type);
-          return;
-
-        } catch (decodeErr) {
-          console.error('Error decoding eSewa data:', decodeErr);
-        }
-      }
-
-      // If we have paymentId (from backend redirect or simulate success), payment already processed
-      if (paymentId && paymentId !== 'error' && paymentId !== 'unknown') {
-        console.log('Payment already processed by backend, paymentId:', paymentId);
+      // ── Case 1: backend already processed & redirected here with paymentId ──
+      if (paymentId && paymentId !== 'error' && paymentId !== 'unknown' && !error) {
+        console.log('✅ Backend confirmed payment:', paymentId);
         handleSuccess(type);
         return;
       }
 
-      // No valid payment data
-      console.error('No valid payment data found');
-      setStatus('failed');
-      setTimeout(() => navigate('/payment/failure?error=missing_parameters', { replace: true }), 1500);
+      // ── Case 2: eSewa redirected directly to frontend (misconfigured callback) ──
+      // Decode the data param client-side and check status — no backend call needed
+      if (encodedData) {
+        try {
+          const decoded = JSON.parse(atob(encodedData));
+          console.log('Decoded eSewa data (direct redirect):', decoded);
 
-    } catch (error) {
-      console.error('Error in payment success handler:', error);
-      // If backend already processed and redirected here, just show success
-      const paymentId = searchParams.get('paymentId');
-      if (paymentId && paymentId !== 'error') {
-        handleSuccess(searchParams.get('type'));
-      } else {
-        setStatus('failed');
-        setTimeout(() => navigate('/payment/failure?error=server_error', { replace: true }), 1500);
+          if (decoded.status === 'COMPLETE') {
+            // Payment is complete — backend will have already processed it via
+            // the server-side callback. Just show success.
+            handleSuccess(type);
+            return;
+          } else {
+            console.error('eSewa status not COMPLETE:', decoded.status);
+            redirectToFailure('payment_cancelled', decoded.transaction_uuid);
+            return;
+          }
+        } catch (decodeErr) {
+          console.error('Failed to decode eSewa data:', decodeErr);
+          redirectToFailure('decode_error');
+          return;
+        }
       }
+
+      // ── Case 3: error param present ──
+      if (error) {
+        console.error('Payment error param:', error);
+        redirectToFailure(error, paymentId);
+        return;
+      }
+
+      // ── Case 4: no recognisable params ──
+      console.error('No valid payment params found');
+      redirectToFailure('missing_parameters');
+
+    } catch (err) {
+      console.error('Unexpected error in PaymentSuccess:', err);
+      redirectToFailure('client_error');
     }
   };
 
   const handleSuccess = (type) => {
     setStatus('success');
+
+    // Clear cart
     localStorage.removeItem('cart');
     window.dispatchEvent(new CustomEvent('cartCleared'));
     window.dispatchEvent(new CustomEvent('paymentCompleted'));
@@ -97,6 +82,12 @@ export default function PaymentSuccess() {
       : '/marketplace';
 
     setTimeout(() => navigate(redirectPath, { replace: true }), 1500);
+  };
+
+  const redirectToFailure = (error, paymentId) => {
+    setStatus('failed');
+    const pid = paymentId ? `&paymentId=${encodeURIComponent(paymentId)}` : '';
+    setTimeout(() => navigate(`/payment/failure?error=${error}${pid}`, { replace: true }), 1500);
   };
 
   return (
