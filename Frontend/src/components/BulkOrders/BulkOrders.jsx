@@ -31,6 +31,7 @@ export default function BulkOrders() {
     'Spices & Herbs',
     'Honey & Natural Products',
     'Seeds & Plants',
+    'Dried Items',
     'Farm Essentials'
   ];
 

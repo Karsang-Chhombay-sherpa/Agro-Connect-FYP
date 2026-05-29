@@ -18,7 +18,7 @@ const productSchema = new mongoose.Schema({
   unit: { 
     type: String, 
     required: true,
-    enum: ['kg', 'liter', 'piece', 'dozen', 'box']
+    enum: ['kg', 'half_kg', 'liter', 'piece', 'dozen', 'box', 'packet']
   },
   pricePerUnit: { 
     type: Number, 

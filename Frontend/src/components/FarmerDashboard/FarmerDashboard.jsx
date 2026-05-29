@@ -438,10 +438,12 @@ export default function FarmerDashboard() {
                           required
                         >
                           <option value="kg">kg</option>
+                          <option value="half_kg">half kg</option>
                           <option value="liter">liter</option>
                           <option value="piece">piece</option>
                           <option value="dozen">dozen</option>
                           <option value="box">box</option>
+                          <option value="packet">packet</option>
                         </select>
                       </div>
 
@@ -479,6 +481,7 @@ export default function FarmerDashboard() {
                           <option value="Spices & Herbs">Spices & Herbs</option>
                           <option value="Honey & Natural Products">Honey & Natural Products</option>
                           <option value="Seeds & Plants">Seeds & Plants</option>
+                          <option value="Dried Items">Dried Items</option>
                           <option value="Farm Essentials">Farm Essentials</option>
                         </select>
                       </div>

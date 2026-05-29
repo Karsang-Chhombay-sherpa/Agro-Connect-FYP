@@ -41,6 +41,7 @@ export default function Marketplace() {
     "Spices & Herbs",
     "Honey & Natural Products",
     "Seeds & Plants",
+    "Dried Items",
     "Farm Essentials",
   ];
 
