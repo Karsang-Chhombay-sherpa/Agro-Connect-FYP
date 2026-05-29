@@ -1,0 +1,274 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #d1fae5 0%, #fef3c7 100%);
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 500px;
+  width: 100%;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #22c55e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.successIcon,
+.failureIcon {
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  margin: 0 0 12px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.subtitle {
+  margin: 0 0 32px 0;
+  color: #6b7280;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.details {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+}
+
+.detailRow span:first-child {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.detailRow span:last-child {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.failedStatus {
+  color: #ef4444 !important;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .actions {
+    flex-direction: column;
+  }
+  
+  .primaryBtn,
+  .secondaryBtn,
+  .tertiaryBtn {
+    width: 100%;
+  }
+}
+
+.primaryBtn {
+  flex: 1;
+  min-width: 140px;
+  padding: 14px 24px;
+  background: #22c55e;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primaryBtn:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
+.secondaryBtn {
+  flex: 1;
+  min-width: 140px;
+  padding: 14px 24px;
+  background: transparent;
+  color: #6b7280;
+  text-decoration: none;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.secondaryBtn:hover {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.tertiaryBtn {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px 20px;
+  background: transparent;
+  color: #9ca3af;
+  text-decoration: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tertiaryBtn:hover {
+  border-color: #d1d5db;
+  color: #6b7280;
+}
+
+.note {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: left;
+}
+
+.note p {
+  margin: 0;
+  font-size: 14px;
+  color: #166534;
+  line-height: 1.5;
+}
+
+.note strong {
+  color: #15803d;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .card {
+    padding: 24px;
+  }
+  
+  .title {
+    font-size: 24px;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .primaryBtn,
+  .secondaryBtn {
+    width: 100%;
+  }
+}
+.successStatus {
+  color: #22c55e !important;
+}
+
+.errorNote {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.errorNote p {
+  margin: 0;
+  font-size: 14px;
+  color: #dc2626;
+  line-height: 1.5;
+}
+
+.errorNote strong {
+  color: #b91c1c;
+}
+
+.debugInfo {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.debugInfo h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.debugInfo p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.debugInfo ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.debugInfo li {
+  font-size: 14px;
+  color: #475569;
+  margin: 4px 0;
+}
