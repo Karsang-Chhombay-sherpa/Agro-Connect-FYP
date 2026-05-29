@@ -6,12 +6,20 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
   console.warn("WARNING: EMAIL_USER or EMAIL_PASS not set in .env file. Email functionality will not work.");
 }
 
+// Use explicit SMTP settings instead of the 'gmail' service shorthand.
+// Port 587 + STARTTLS works on Render (port 465 SSL is often blocked).
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,       // STARTTLS — upgrade after connecting
+  requireTLS: true,    // Force TLS upgrade
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000,  // 10 s
+  greetingTimeout:   10000,
+  socketTimeout:     15000,
 });
 
 // Send OTP for password reset
@@ -21,7 +29,7 @@ module.exports.sendPasswordResetOtp = async (to, otp) => {
   }
 
   try {
-    await transporter.verify();
+
     
     await transporter.sendMail({
       from: `"AgroConnect" <${process.env.EMAIL_USER}>`,
@@ -73,7 +81,7 @@ module.exports.sendRegistrationOtp = async (to, otp) => {
   }
 
   try {
-    await transporter.verify();
+
     
     await transporter.sendMail({
       from: `"AgroConnect" <${process.env.EMAIL_USER}>`,
@@ -134,7 +142,7 @@ module.exports.sendSubscriptionNotificationToFarmer = async (farmerEmail, subscr
 
   try {
     // Verify transporter configuration
-    await transporter.verify();
+
     
     const {
       subscriptionId,
@@ -323,7 +331,7 @@ module.exports.sendSubscriptionConfirmationToCustomer = async (customerEmail, su
   }
 
   try {
-    await transporter.verify();
+
     
     const {
       subscriptionId,
@@ -438,7 +446,7 @@ module.exports.sendSubscriptionInvoice = async (customerEmail, invoiceData) => {
   }
 
   try {
-    await transporter.verify();
+
 
     const {
       subscriptionId, customerName, planName, planType,

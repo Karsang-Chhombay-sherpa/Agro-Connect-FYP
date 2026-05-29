@@ -33,6 +33,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'https://agro-connect-fyp.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
@@ -40,7 +41,10 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, Render health checks)
     if (!origin) return callback(null, true);
+    // Allow any vercel.app preview deployment for this project
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    console.warn(`CORS blocked: ${origin}`);
     callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
