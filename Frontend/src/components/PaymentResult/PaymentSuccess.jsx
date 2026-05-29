@@ -12,13 +12,27 @@ export default function PaymentSuccess() {
   }, []);
 
   // Restore user session if it was lost during the eSewa redirect chain
-  const restoreSession = () => {
+  const restoreSession = (searchParams) => {
+    // Priority 1: user data passed directly in URL by backend (most reliable)
+    const ud = searchParams.get('ud');
+    if (ud) {
+      try {
+        const userData = JSON.parse(atob(ud));
+        localStorage.setItem('user', JSON.stringify(userData));
+        console.log('✅ Session restored from URL param:', userData.email);
+        return true;
+      } catch (e) {
+        console.warn('Failed to parse ud param:', e);
+      }
+    }
+
+    // Priority 2: sessionStorage backup
     const user = localStorage.getItem('user');
     if (!user) {
       const backup = sessionStorage.getItem('user_backup');
       if (backup) {
         localStorage.setItem('user', backup);
-        console.log('✅ Session restored from backup');
+        console.log('✅ Session restored from sessionStorage backup');
         return true;
       }
       return false;
@@ -28,8 +42,8 @@ export default function PaymentSuccess() {
 
   const processPaymentResult = () => {
     try {
-      // Always try to restore session first
-      restoreSession();
+      // Always try to restore session first — pass searchParams so we can read 'ud'
+      restoreSession(searchParams);
 
       const paymentId   = searchParams.get('paymentId');
       const type        = searchParams.get('type');

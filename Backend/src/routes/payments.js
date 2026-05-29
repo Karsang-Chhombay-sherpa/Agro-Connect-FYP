@@ -588,25 +588,38 @@ router.get('/success', async (req, res) => {
     
     console.log('🔄 Redirecting to success page');
     
-    // Determine payment type by checking if it's a subscription
-    let paymentType = 'order'; // default
+    // Determine payment type and fetch user data to restore session on frontend
+    let paymentType = 'order';
+    let userToken = '';
     try {
       const Payment = require('../models/Payment');
+      const User = require('../models/User');
       const paymentRecord = await Payment.findOne({ paymentId });
-      if (paymentRecord && paymentRecord.paymentType === 'subscription') {
-        paymentType = 'subscription';
-        console.log('✅ Detected subscription payment');
+      if (paymentRecord) {
+        if (paymentRecord.paymentType === 'subscription') {
+          paymentType = 'subscription';
+          console.log('✅ Detected subscription payment');
+        }
+        // Fetch user data to pass back to frontend for session restoration
+        if (paymentRecord.userId) {
+          const user = await User.findById(paymentRecord.userId).select('-password');
+          if (user) {
+            const userData = { ...user.toObject(), userType: 'user' };
+            userToken = Buffer.from(JSON.stringify(userData)).toString('base64');
+            console.log('✅ User data fetched for session restoration:', user.email);
+          }
+        }
       }
     } catch (typeCheckError) {
-      console.log('⚠️ Could not determine payment type:', typeCheckError.message);
+      console.log('⚠️ Could not determine payment type or fetch user:', typeCheckError.message);
     }
     
-    // Create a clean redirect URL with payment type
-    const redirectUrl = `${process.env.FRONTEND_URL}/payment/success?paymentId=${encodeURIComponent(paymentId || 'unknown')}&transactionId=${encodeURIComponent(transactionId || 'unknown')}&amount=${encodeURIComponent(amount || '0')}&status=${encodeURIComponent(status || 'unknown')}&type=${paymentType}&redirect=immediate`;
+    // Build redirect URL — include base64 user data so frontend can restore session
+    const redirectUrl = `${process.env.FRONTEND_URL}/payment/success?paymentId=${encodeURIComponent(paymentId || 'unknown')}&transactionId=${encodeURIComponent(transactionId || 'unknown')}&amount=${encodeURIComponent(amount || '0')}&status=${encodeURIComponent(status || 'unknown')}&type=${paymentType}&redirect=immediate${userToken ? `&ud=${userToken}` : ''}`;
     
-    console.log('🔗 Redirect URL:', redirectUrl);
+    console.log('🔗 Redirect URL built (userToken present:', !!userToken, ')');
     
-    // Try to redirect to React app first, with fallback to static page
+    // Redirect to frontend
     try {
       res.redirect(redirectUrl);
     } catch (redirectError) {
