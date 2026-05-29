@@ -16,37 +16,46 @@ const transporter = nodemailer.createTransport({
 
 // Send OTP for password reset
 module.exports.sendPasswordResetOtp = async (to, otp) => {
-  // Check if email is configured
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     throw new Error("Email configuration is missing. Please set EMAIL_USER and EMAIL_PASS in your .env file.");
   }
 
   try {
-    // Verify transporter configuration
     await transporter.verify();
     
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"AgroConnect" <${process.env.EMAIL_USER}>`,
       to,
-      subject: "Your OTP for AgroConnect - Password Reset",
-      text: `Your password reset OTP is: ${otp}\n\nThis OTP will expire in 5 minutes.\n\nIf you didn't request this, please ignore this email.`,
+      subject: `${otp} is your AgroConnect password reset code`,
+      text: `Your AgroConnect password reset code is: ${otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, please ignore this email.`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #22c55e;">AgroConnect - Password Reset</h2>
-          <p>Your password reset OTP is:</p>
-          <div style="background: #f3f4f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0; border-radius: 8px;">
-            ${otp}
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9fafb; border-radius: 12px;">
+          <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h1 style="color: #22c55e; font-size: 24px; margin: 0;">🌿 AgroConnect</h1>
+              <p style="color: #6b7280; margin: 4px 0 0; font-size: 14px;">Fresh from the farm to your door</p>
+            </div>
+
+            <h2 style="color: #111827; font-size: 20px; margin: 0 0 8px;">Reset your password</h2>
+            <p style="color: #6b7280; font-size: 14px; margin: 0 0 24px;">
+              Use the code below to reset your password. This code expires in <strong>5 minutes</strong>.
+            </p>
+
+            <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 24px;">
+              <p style="color: #6b7280; font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 1px;">Your reset code</p>
+              <div style="font-size: 40px; font-weight: 700; letter-spacing: 12px; color: #111827;">${otp}</div>
+            </div>
+
+            <p style="color: #9ca3af; font-size: 12px; margin: 0; text-align: center;">
+              If you didn't request a password reset, you can safely ignore this email. Your password will not change.
+            </p>
           </div>
-          <p>This OTP will expire in 5 minutes.</p>
-          <p style="color: #6b7280; font-size: 12px;">If you didn't request this password reset, please ignore this email.</p>
         </div>
       `
     });
     console.log("Password reset OTP email sent successfully to:", to);
   } catch (err) {
     console.error("Failed to send password reset OTP email:", err);
-    
-    // Provide more specific error messages
     if (err.code === "EAUTH") {
       throw new Error("Email authentication failed. Please check your EMAIL_USER and EMAIL_PASS in .env file.");
     } else if (err.code === "ECONNECTION" || err.code === "ETIMEDOUT") {
@@ -59,43 +68,50 @@ module.exports.sendPasswordResetOtp = async (to, otp) => {
 
 // Send OTP for registration verification
 module.exports.sendRegistrationOtp = async (to, otp) => {
-  // Check if email is configured
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error("Email configuration is missing. Please set EMAIL_USER and EMAIL_PASS in your .env file.");
+    throw new Error("Email configuration is missing.");
   }
 
   try {
-    // Verify transporter configuration
     await transporter.verify();
     
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"AgroConnect" <${process.env.EMAIL_USER}>`,
       to,
-      subject: "Welcome to AgroConnect - Verify Your Account",
-      text: `Welcome to AgroConnect!\n\nYour account verification OTP is: ${otp}\n\nThis OTP will expire in 5 minutes.\n\nPlease enter this OTP to complete your registration.`,
+      subject: `${otp} is your AgroConnect verification code`,
+      text: `Your AgroConnect verification code is: ${otp}\n\nThis code expires in 5 minutes.\n\nIf you did not request this, please ignore this email.`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #22c55e;">Welcome to AgroConnect!</h2>
-          <p>Thank you for registering with us. To complete your account setup, please verify your email address.</p>
-          <p>Your verification OTP is:</p>
-          <div style="background: #f3f4f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0; border-radius: 8px;">
-            ${otp}
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9fafb; border-radius: 12px;">
+          <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h1 style="color: #22c55e; font-size: 24px; margin: 0;">🌿 AgroConnect</h1>
+              <p style="color: #6b7280; margin: 4px 0 0; font-size: 14px;">Fresh from the farm to your door</p>
+            </div>
+            
+            <h2 style="color: #111827; font-size: 20px; margin: 0 0 8px;">Verify your email address</h2>
+            <p style="color: #6b7280; font-size: 14px; margin: 0 0 24px;">
+              Use the code below to complete your registration. This code expires in <strong>5 minutes</strong>.
+            </p>
+            
+            <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 24px;">
+              <p style="color: #6b7280; font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 1px;">Your verification code</p>
+              <div style="font-size: 40px; font-weight: 700; letter-spacing: 12px; color: #111827;">${otp}</div>
+            </div>
+            
+            <p style="color: #9ca3af; font-size: 12px; margin: 0; text-align: center;">
+              If you didn't create an AgroConnect account, you can safely ignore this email.
+            </p>
           </div>
-          <p>This OTP will expire in 5 minutes.</p>
-          <p>Please enter this OTP in the verification form to activate your account.</p>
-          <p style="color: #6b7280; font-size: 12px;">If you didn't create an account with AgroConnect, please ignore this email.</p>
         </div>
       `
     });
     console.log("Registration OTP email sent successfully to:", to);
   } catch (err) {
     console.error("Failed to send registration OTP email:", err);
-    
-    // Provide more specific error messages
     if (err.code === "EAUTH") {
-      throw new Error("Email authentication failed. Please check your EMAIL_USER and EMAIL_PASS in .env file.");
+      throw new Error("Email authentication failed. Please check EMAIL_USER and EMAIL_PASS.");
     } else if (err.code === "ECONNECTION" || err.code === "ETIMEDOUT") {
-      throw new Error("Unable to connect to email server. Please check your internet connection.");
+      throw new Error("Unable to connect to email server.");
     } else {
       throw new Error(`Failed to send email: ${err.message}`);
     }
