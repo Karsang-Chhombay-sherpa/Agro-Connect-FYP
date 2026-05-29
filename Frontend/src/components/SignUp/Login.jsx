@@ -51,13 +51,19 @@ export default function Login({ onLogin }) {
         // Store user data in localStorage
         localStorage.setItem("user", JSON.stringify(res.data.user));
         onLogin && onLogin(res.data.user);
+
+        // Check for redirect param (e.g. after payment redirect to login)
+        const redirectTo = searchParams.get("redirect");
+
         // Redirect based on account type
         if (res.data.user.userType === "farmer") {
           navigate("/farmer-dashboard");
         } else if (res.data.user.userType === "admin") {
           navigate("/admin-dashboard");
+        } else if (redirectTo) {
+          navigate(decodeURIComponent(redirectTo), { replace: true });
         } else {
-          navigate("/"); // Redirect users to landing page
+          navigate("/marketplace");
         }
       }
     } catch (err) {

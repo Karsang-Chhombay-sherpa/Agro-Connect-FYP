@@ -77,6 +77,18 @@ export default function PaymentSuccess() {
     window.dispatchEvent(new CustomEvent('paymentCompleted'));
     localStorage.setItem('walletUpdate', Date.now().toString());
 
+    // Check if user is still in localStorage — if not, they got logged out
+    // during the eSewa redirect chain. Re-read from storage before navigating.
+    const userData = localStorage.getItem('user');
+    if (!userData) {
+      // User session lost during payment redirect — send to login with return path
+      const returnPath = type === 'subscription'
+        ? '/user-profile?subscription=success'
+        : '/marketplace';
+      setTimeout(() => navigate(`/login?redirect=${encodeURIComponent(returnPath)}`, { replace: true }), 1500);
+      return;
+    }
+
     const redirectPath = type === 'subscription'
       ? '/user-profile?subscription=success'
       : '/marketplace';
