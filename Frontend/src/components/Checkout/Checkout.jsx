@@ -207,6 +207,12 @@ export default function Checkout({ isOpen, onClose, cart, subtotal, onOrderCompl
 
         if (paymentResponse.data.success) {
           console.log('eSewa payment initiated:', paymentResponse.data);
+          // Save session backup before leaving for eSewa
+          const userBackup = localStorage.getItem('user');
+          if (userBackup) {
+            sessionStorage.setItem('user_backup', userBackup);
+            sessionStorage.setItem('payment_return_path', '/marketplace');
+          }
           setEsewaPaymentData(paymentResponse.data.data);
           setShowEsewaPayment(true);
           // Don't complete order yet - wait for eSewa callback

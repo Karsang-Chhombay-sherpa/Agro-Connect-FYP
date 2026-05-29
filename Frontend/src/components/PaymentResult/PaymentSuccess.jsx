@@ -11,36 +11,49 @@ export default function PaymentSuccess() {
     processPaymentResult();
   }, []);
 
+  // Restore user session if it was lost during the eSewa redirect chain
+  const restoreSession = () => {
+    const user = localStorage.getItem('user');
+    if (!user) {
+      const backup = sessionStorage.getItem('user_backup');
+      if (backup) {
+        localStorage.setItem('user', backup);
+        console.log('✅ Session restored from backup');
+        return true;
+      }
+      return false;
+    }
+    return true;
+  };
+
   const processPaymentResult = () => {
     try {
+      // Always try to restore session first
+      restoreSession();
+
       const paymentId   = searchParams.get('paymentId');
       const type        = searchParams.get('type');
       const error       = searchParams.get('error');
-      const encodedData = searchParams.get('data'); // raw eSewa V2 redirect (edge case)
+      const encodedData = searchParams.get('data');
 
       console.log('PaymentSuccess — URL params:', { paymentId, type, error, hasData: !!encodedData });
 
-      // ── Case 1: backend already processed & redirected here with paymentId ──
+      // Case 1: backend processed & redirected with paymentId
       if (paymentId && paymentId !== 'error' && paymentId !== 'unknown' && !error) {
         console.log('✅ Backend confirmed payment:', paymentId);
         handleSuccess(type);
         return;
       }
 
-      // ── Case 2: eSewa redirected directly to frontend (misconfigured callback) ──
-      // Decode the data param client-side and check status — no backend call needed
+      // Case 2: eSewa redirected directly to frontend
       if (encodedData) {
         try {
           const decoded = JSON.parse(atob(encodedData));
-          console.log('Decoded eSewa data (direct redirect):', decoded);
-
+          console.log('Decoded eSewa data:', decoded);
           if (decoded.status === 'COMPLETE') {
-            // Payment is complete — backend will have already processed it via
-            // the server-side callback. Just show success.
             handleSuccess(type);
             return;
           } else {
-            console.error('eSewa status not COMPLETE:', decoded.status);
             redirectToFailure('payment_cancelled', decoded.transaction_uuid);
             return;
           }
@@ -51,15 +64,13 @@ export default function PaymentSuccess() {
         }
       }
 
-      // ── Case 3: error param present ──
+      // Case 3: error param
       if (error) {
-        console.error('Payment error param:', error);
         redirectToFailure(error, paymentId);
         return;
       }
 
-      // ── Case 4: no recognisable params ──
-      console.error('No valid payment params found');
+      // Case 4: no params
       redirectToFailure('missing_parameters');
 
     } catch (err) {
@@ -73,31 +84,35 @@ export default function PaymentSuccess() {
 
     // Clear cart
     localStorage.removeItem('cart');
+    // Clean up backup
+    sessionStorage.removeItem('user_backup');
+    sessionStorage.removeItem('payment_return_path');
+
     window.dispatchEvent(new CustomEvent('cartCleared'));
     window.dispatchEvent(new CustomEvent('paymentCompleted'));
     localStorage.setItem('walletUpdate', Date.now().toString());
 
-    // Check if user is still in localStorage — if not, they got logged out
-    // during the eSewa redirect chain. Re-read from storage before navigating.
+    // Determine redirect path
+    let redirectPath = sessionStorage.getItem('payment_return_path') || '/marketplace';
+    if (type === 'subscription') redirectPath = '/user-profile?subscription=success';
+
+    // Final check — if still no session, go to login with redirect
     const userData = localStorage.getItem('user');
     if (!userData) {
-      // User session lost during payment redirect — send to login with return path
-      const returnPath = type === 'subscription'
-        ? '/user-profile?subscription=success'
-        : '/marketplace';
-      setTimeout(() => navigate(`/login?redirect=${encodeURIComponent(returnPath)}`, { replace: true }), 1500);
+      setTimeout(() => navigate(
+        `/login?redirect=${encodeURIComponent(redirectPath)}`,
+        { replace: true }
+      ), 1500);
       return;
     }
-
-    const redirectPath = type === 'subscription'
-      ? '/user-profile?subscription=success'
-      : '/marketplace';
 
     setTimeout(() => navigate(redirectPath, { replace: true }), 1500);
   };
 
   const redirectToFailure = (error, paymentId) => {
     setStatus('failed');
+    sessionStorage.removeItem('user_backup');
+    sessionStorage.removeItem('payment_return_path');
     const pid = paymentId ? `&paymentId=${encodeURIComponent(paymentId)}` : '';
     setTimeout(() => navigate(`/payment/failure?error=${error}${pid}`, { replace: true }), 1500);
   };

@@ -311,6 +311,12 @@ export default function SubscriptionCheckout() {
       console.log('eSewa payment initiated successfully:', paymentResponse.data);
 
       // Store payment data and show eSewa payment component
+      // Save session backup before leaving for eSewa
+      const userBackup = localStorage.getItem('user');
+      if (userBackup) {
+        sessionStorage.setItem('user_backup', userBackup);
+        sessionStorage.setItem('payment_return_path', '/user-profile?subscription=success');
+      }
       setPaymentData(paymentResponse.data.data);
       setShowPaymentModal(false);
 
