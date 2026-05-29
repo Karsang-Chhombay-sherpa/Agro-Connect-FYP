@@ -11,7 +11,7 @@ router.get('/test', (req, res) => {
     message: 'Payment routes working', 
     timestamp: new Date().toISOString(),
     frontendUrl: process.env.FRONTEND_URL,
-    backendUrl: `http://localhost:${process.env.PORT || 5001}`,
+    backendUrl: process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 8000}`,
     servers: {
       backend: 'running',
       frontend: process.env.FRONTEND_URL

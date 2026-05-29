@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: agro-connect-fyp
+    runtime: node
+    rootDir: .
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://agro-connect-fyp.vercel.app
+      - key: ESEWA_SUCCESS_URL
+        value: https://agro-connect-fyp.onrender.com/api/payments/success
+      - key: ESEWA_FAILURE_URL
+        value: https://agro-connect-fyp.onrender.com/api/payments/failure

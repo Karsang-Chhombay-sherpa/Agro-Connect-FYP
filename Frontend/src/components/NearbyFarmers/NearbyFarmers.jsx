@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './NearbyFarmers.module.css';
 
-const API_BASE    = import.meta.env.VITE_API_URL    || 'http://localhost:8000';
+const API_BASE    = import.meta.env.VITE_API_URL || '';
 const GALLI_TOKEN = import.meta.env.VITE_GALLI_TOKEN || '';
 
 // Galli Maps style URL — this is the correct tile endpoint
