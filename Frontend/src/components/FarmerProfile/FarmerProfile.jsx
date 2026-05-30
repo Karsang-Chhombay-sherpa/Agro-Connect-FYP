@@ -42,6 +42,11 @@ export default function FarmerProfile() {
   // Notification preferences state
   const [orderNotifications, setOrderNotifications] = useState(true);
 
+  // GPS location state
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [manualLat, setManualLat] = useState('');
+  const [manualLng, setManualLng] = useState('');
+
   // Danger Zone state
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -89,10 +94,13 @@ export default function FarmerProfile() {
         setOrderNotifications(farmerData.orderNotifications !== false); // Default to true
         
         if (farmerData.geoLocation && farmerData.geoLocation.coordinates) {
-          setLocation({
+          const coords = {
             latitude: farmerData.geoLocation.coordinates[1],
             longitude: farmerData.geoLocation.coordinates[0]
-          });
+          };
+          setLocation(coords);
+          setManualLat(String(coords.latitude));
+          setManualLng(String(coords.longitude));
         }
       }
     } catch (error) {
@@ -175,6 +183,60 @@ export default function FarmerProfile() {
   const handleRemoveProfilePicture = () => {
     setProfilePicture('');
     setProfilePicturePreview('');
+  };
+
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setManualLat(String(lat));
+        setManualLng(String(lng));
+        await saveCoordinates(lat, lng);
+        setGpsLoading(false);
+      },
+      (err) => {
+        setGpsLoading(false);
+        toast.error('Could not get location. Please enter coordinates manually.');
+        console.error('Geolocation error:', err);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleSaveManualCoords = async () => {
+    const lat = parseFloat(manualLat);
+    const lng = parseFloat(manualLng);
+    if (isNaN(lat) || isNaN(lng)) {
+      toast.error('Please enter valid latitude and longitude values');
+      return;
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      toast.error('Coordinates out of valid range');
+      return;
+    }
+    await saveCoordinates(lat, lng);
+  };
+
+  const saveCoordinates = async (lat, lng) => {
+    try {
+      const response = await axios.put(`/api/location/farmer/${farmer._id}/coordinates`, {
+        latitude: lat,
+        longitude: lng
+      });
+      if (response.data.success) {
+        setLocation({ latitude: lat, longitude: lng });
+        toast.success('Farm location saved! You will now appear in nearby farmer searches.');
+      }
+    } catch (error) {
+      console.error('Error saving coordinates:', error);
+      toast.error(error.response?.data?.message || 'Failed to save location');
+    }
   };
 
   const handleViewOnMap = () => {
@@ -822,6 +884,87 @@ export default function FarmerProfile() {
                     )}
                   </label>
                 </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Farm GPS Location</label>
+                <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
+                  Set your farm's GPS coordinates so customers can find you in "Farmers Near You".
+                  {location
+                    ? <span style={{ color: '#22c55e', fontWeight: 600 }}> ✓ Location is set.</span>
+                    : <span style={{ color: '#f59e0b', fontWeight: 600 }}> ⚠ Location not set — you won't appear in nearby searches.</span>
+                  }
+                </p>
+
+                <button
+                  type="button"
+                  className={styles.saveBtn}
+                  style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', width: 'auto' }}
+                  onClick={handleDetectLocation}
+                  disabled={gpsLoading}
+                >
+                  {gpsLoading ? (
+                    <>
+                      <span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                      Detecting…
+                    </>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="3" stroke="white" strokeWidth="2"/>
+                        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      Use My Current Location
+                    </>
+                  )}
+                </button>
+
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+                  <div className={styles.formGroup} style={{ flex: 1, marginBottom: 0 }}>
+                    <label className={styles.label}>Latitude</label>
+                    <input
+                      type="number"
+                      className={styles.input}
+                      value={manualLat}
+                      onChange={(e) => setManualLat(e.target.value)}
+                      placeholder="e.g. 27.7172"
+                      step="any"
+                    />
+                  </div>
+                  <div className={styles.formGroup} style={{ flex: 1, marginBottom: 0 }}>
+                    <label className={styles.label}>Longitude</label>
+                    <input
+                      type="number"
+                      className={styles.input}
+                      value={manualLng}
+                      onChange={(e) => setManualLng(e.target.value)}
+                      placeholder="e.g. 85.3240"
+                      step="any"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.saveBtn}
+                    style={{ width: 'auto', whiteSpace: 'nowrap', marginBottom: 0 }}
+                    onClick={handleSaveManualCoords}
+                  >
+                    Save Coordinates
+                  </button>
+                </div>
+
+                {location && (
+                  <div style={{ marginTop: '10px', fontSize: '13px', color: '#6b7280' }}>
+                    Current: {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                    {' '}
+                    <button
+                      type="button"
+                      onClick={handleViewOnMap}
+                      style={{ background: 'none', border: 'none', color: '#22c55e', cursor: 'pointer', textDecoration: 'underline', fontSize: '13px' }}
+                    >
+                      View on map
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className={styles.formActions}>
