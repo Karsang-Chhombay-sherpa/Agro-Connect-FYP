@@ -1,24 +1,31 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.warn('WARNING: EMAIL_USER or EMAIL_PASS not set. Email will not work.');
+// ─── Create transporter lazily (only when needed) ─────────────────────────────
+function createTransporter() {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+
+  if (!user || !pass) {
+    throw new Error('EMAIL_USER and EMAIL_PASS environment variables are required.');
+  }
+
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // TLS
+    auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  });
 }
-
-// ─── Gmail SMTP transporter ───────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Gmail App Password (16-char, no spaces)
-  },
-});
-
-const FROM = `AgroConnect <${process.env.EMAIL_USER}>`;
 
 // ─── core send helper ─────────────────────────────────────────────────────────
 async function send({ to, subject, text, html }) {
-  const info = await transporter.sendMail({ from: FROM, to, subject, text, html });
+  const transporter = createTransporter();
+  const from = `AgroConnect <${process.env.EMAIL_USER}>`;
+  const info = await transporter.sendMail({ from, to, subject, text, html });
   console.log('✓ Email sent, messageId:', info.messageId);
   return info;
 }
@@ -47,9 +54,6 @@ function otpHtml(title, subtitle, otp) {
 
 // ─── Registration OTP ─────────────────────────────────────────────────────────
 module.exports.sendRegistrationOtp = async (to, otp) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error('Email configuration is missing.');
-  }
   try {
     await send({
       to,
@@ -70,9 +74,6 @@ module.exports.sendRegistrationOtp = async (to, otp) => {
 
 // ─── Password Reset OTP ───────────────────────────────────────────────────────
 module.exports.sendPasswordResetOtp = async (to, otp) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error('Email configuration is missing.');
-  }
   try {
     await send({
       to,
