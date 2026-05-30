@@ -502,6 +502,22 @@ class PaymentService {
           // Re-throw to prevent payment from being marked as successful
           throw new Error(`Failed to activate subscription: ${saveError.message}`);
         }
+      } else if (payment.orderType === 'bulkOrder') {
+        // Process as bulk order
+        const BulkOrder = require('../models/BulkOrder');
+        const bulkOrder = await BulkOrder.findById(payment.orderId);
+
+        if (bulkOrder) {
+          bulkOrder.paymentStatus = 'paid';
+          if (bulkOrder.status === 'pending') {
+            bulkOrder.status = 'confirmed';
+          }
+          bulkOrder.updatedAt = Date.now();
+          await bulkOrder.save();
+          console.log('✅ Bulk order payment status updated to paid:', bulkOrder._id);
+        } else {
+          console.error('❌ Bulk order not found for payment orderId:', payment.orderId);
+        }
       } else {
         // Process as regular order
         const Order = require('../models/Order');
