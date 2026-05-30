@@ -1,33 +1,23 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 require('dotenv').config();
 
-// ─── Create transporter lazily (only when needed) ─────────────────────────────
-function createTransporter() {
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-
-  if (!user || !pass) {
-    throw new Error('EMAIL_USER and EMAIL_PASS environment variables are required.');
-  }
-
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // SSL — works on Render (port 587/TLS is blocked on free tier)
-    auth: { user, pass },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000,
-  });
+// ─── Resend client (created lazily) ──────────────────────────────────────────
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('RESEND_API_KEY environment variable is not set.');
+  return new Resend(key);
 }
+
+// Sender address — use onboarding@resend.dev until you verify a custom domain
+const FROM = process.env.EMAIL_FROM || 'AgroConnect <onboarding@resend.dev>';
 
 // ─── core send helper ─────────────────────────────────────────────────────────
 async function send({ to, subject, text, html }) {
-  const transporter = createTransporter();
-  const from = `AgroConnect <${process.env.EMAIL_USER}>`;
-  const info = await transporter.sendMail({ from, to, subject, text, html });
-  console.log('✓ Email sent, messageId:', info.messageId);
-  return info;
+  const resend = getResend();
+  const { data, error } = await resend.emails.send({ from: FROM, to, subject, text, html });
+  if (error) throw new Error(error.message || JSON.stringify(error));
+  console.log('✓ Email sent via Resend, id:', data?.id);
+  return data;
 }
 
 // ─── OTP HTML template ────────────────────────────────────────────────────────
@@ -97,7 +87,7 @@ module.exports.sendOtp = async (to, otp) => module.exports.sendPasswordResetOtp(
 
 // ─── Subscription: notify farmer (non-critical — never throws) ────────────────
 module.exports.sendSubscriptionNotificationToFarmer = async (farmerEmail, data) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+  if (!process.env.RESEND_API_KEY) return;
   try {
     const {
       subscriptionId, customerName, customerEmail, customerPhone,
@@ -136,7 +126,7 @@ module.exports.sendSubscriptionNotificationToFarmer = async (farmerEmail, data) 
 
 // ─── Subscription: confirm to customer (non-critical) ────────────────────────
 module.exports.sendSubscriptionConfirmationToCustomer = async (customerEmail, data) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+  if (!process.env.RESEND_API_KEY) return;
   try {
     const {
       subscriptionId, customerName, planName, planType,
@@ -175,7 +165,7 @@ module.exports.sendSubscriptionConfirmationToCustomer = async (customerEmail, da
 
 // ─── Subscription invoice (non-critical) ─────────────────────────────────────
 module.exports.sendSubscriptionInvoice = async (customerEmail, invoiceData) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+  if (!process.env.RESEND_API_KEY) return;
   try {
     const {
       subscriptionId, customerName, planName, planType,
