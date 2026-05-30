@@ -515,6 +515,9 @@ class PaymentService {
           bulkOrder.updatedAt = Date.now();
           await bulkOrder.save();
           console.log('✅ Bulk order payment status updated to paid:', bulkOrder._id);
+
+          // Credit farmer wallet for bulk order
+          await this.creditFarmerWalletForBulkOrder(bulkOrder, payment);
         } else {
           console.error('❌ Bulk order not found for payment orderId:', payment.orderId);
         }
@@ -541,6 +544,44 @@ class PaymentService {
     } catch (error) {
       console.error('Error processing successful payment:', error);
       console.error('Error stack:', error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Credit farmer wallet for a bulk order payment
+   */
+  async creditFarmerWalletForBulkOrder(bulkOrder, payment) {
+    try {
+      const farmerId = bulkOrder.farmerId.toString();
+      // farmerAmount is stored on the Payment record (after platform commission deduction)
+      // Fall back to pricing.totalAmount if farmerAmount not set
+      const farmerAmount = payment.farmerAmount || bulkOrder.pricing.totalAmount;
+
+      console.log(`Crediting farmer ${farmerId} ₹${farmerAmount} for bulk order ${bulkOrder.orderId}`);
+
+      let wallet = await Wallet.findOne({ farmerId });
+      if (!wallet) {
+        console.log(`Creating new wallet for farmer ${farmerId}`);
+        wallet = new Wallet({ farmerId });
+      }
+
+      wallet.transactions.push({
+        type: 'credit',
+        amount: farmerAmount,
+        description: `Payment for bulk order ${bulkOrder.orderId}`,
+        orderId: bulkOrder._id,
+        transactionId: payment.esewaTransactionId || payment.paymentId,
+        status: 'completed'
+      });
+
+      wallet.balance += farmerAmount;
+      wallet.totalEarnings += farmerAmount;
+      await wallet.save();
+
+      console.log(`✅ Credited ₹${farmerAmount} to farmer ${farmerId} wallet. New balance: ₹${wallet.balance}`);
+    } catch (error) {
+      console.error('Error crediting farmer wallet for bulk order:', error);
       throw error;
     }
   }
