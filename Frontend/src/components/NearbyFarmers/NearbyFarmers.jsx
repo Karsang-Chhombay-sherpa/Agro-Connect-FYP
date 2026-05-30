@@ -48,6 +48,7 @@ export default function NearbyFarmers() {
   const [userCoords, setUserCoords] = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [locError,   setLocError]   = useState('');
+  const [fetchError, setFetchError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [radius,     setRadius]     = useState(25);
   const [mapReady,   setMapReady]   = useState(false);
@@ -72,11 +73,38 @@ export default function NearbyFarmers() {
   useEffect(() => {
     if (!userCoords) return;
     setLoading(true);
-    fetch(`${API_BASE}/api/location/nearby-farmers?lat=${userCoords.lat}&lng=${userCoords.lng}&maxDistance=${radius * 1000}`)
-      .then(r => r.json())
-      .then(d => { if (d.success) setFarmers(d.farmers); })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    setFetchError('');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+    fetch(`${API_BASE}/api/location/nearby-farmers?lat=${userCoords.lat}&lng=${userCoords.lng}&maxDistance=${radius * 1000}`, {
+      signal: controller.signal
+    })
+      .then(r => {
+        if (!r.ok) throw new Error(`Server error: ${r.status}`);
+        return r.json();
+      })
+      .then(d => {
+        if (d.success) {
+          setFarmers(d.farmers);
+        } else {
+          setFetchError(d.message || 'No data returned from server.');
+        }
+      })
+      .catch(err => {
+        if (err.name === 'AbortError') {
+          setFetchError('Request timed out. The server may be starting up — please try again in a moment.');
+        } else {
+          setFetchError(`Failed to load farmers: ${err.message}`);
+        }
+        console.error('Fetch error:', err);
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setLoading(false);
+      });
+
+    return () => { clearTimeout(timeoutId); controller.abort(); };
   }, [userCoords, radius]);
 
   // 3. Init map once coords ready
@@ -179,6 +207,17 @@ export default function NearbyFarmers() {
         </div>
 
         {locError && <div className={styles.locWarning}>📍 {locError}</div>}
+        {fetchError && (
+          <div className={styles.locWarning} style={{ background: '#fef2f2', color: '#dc2626', borderColor: '#fca5a5' }}>
+            ⚠ {fetchError}
+            <button
+              onClick={() => setUserCoords({ ...userCoords })}
+              style={{ marginLeft: '12px', padding: '2px 10px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         <div className={styles.body}>
 
