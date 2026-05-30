@@ -1,20 +1,26 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-if (!process.env.RESEND_API_KEY) {
-  console.warn('WARNING: RESEND_API_KEY not set. Email will not work.');
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.warn('WARNING: EMAIL_USER or EMAIL_PASS not set. Email will not work.');
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// ─── Gmail SMTP transporter ───────────────────────────────────────────────────
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS, // Gmail App Password (16-char, no spaces)
+  },
+});
 
-// Use onboarding@resend.dev until you verify a custom domain in Resend dashboard
-const FROM = process.env.EMAIL_FROM || 'AgroConnect <onboarding@resend.dev>';
+const FROM = `AgroConnect <${process.env.EMAIL_USER}>`;
 
 // ─── core send helper ─────────────────────────────────────────────────────────
 async function send({ to, subject, text, html }) {
-  const { data, error } = await resend.emails.send({ from: FROM, to, subject, text, html });
-  if (error) throw new Error(error.message || JSON.stringify(error));
-  return data;
+  const info = await transporter.sendMail({ from: FROM, to, subject, text, html });
+  console.log('✓ Email sent, messageId:', info.messageId);
+  return info;
 }
 
 // ─── OTP HTML template ────────────────────────────────────────────────────────
@@ -41,7 +47,9 @@ function otpHtml(title, subtitle, otp) {
 
 // ─── Registration OTP ─────────────────────────────────────────────────────────
 module.exports.sendRegistrationOtp = async (to, otp) => {
-  if (!process.env.RESEND_API_KEY) throw new Error('Email configuration is missing.');
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('Email configuration is missing.');
+  }
   try {
     await send({
       to,
@@ -56,13 +64,15 @@ module.exports.sendRegistrationOtp = async (to, otp) => {
     console.log('✓ Registration OTP sent to:', to);
   } catch (err) {
     console.error('Failed to send registration OTP:', err.message);
-    throw new Error('Failed to send OTP email. Please try again.');
+    throw new Error('Failed to send OTP email. Please check your email configuration.');
   }
 };
 
 // ─── Password Reset OTP ───────────────────────────────────────────────────────
 module.exports.sendPasswordResetOtp = async (to, otp) => {
-  if (!process.env.RESEND_API_KEY) throw new Error('Email configuration is missing.');
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('Email configuration is missing.');
+  }
   try {
     await send({
       to,
@@ -77,7 +87,7 @@ module.exports.sendPasswordResetOtp = async (to, otp) => {
     console.log('✓ Password reset OTP sent to:', to);
   } catch (err) {
     console.error('Failed to send password reset OTP:', err.message);
-    throw new Error('Failed to send OTP email. Please try again.');
+    throw new Error('Failed to send OTP email. Please check your email configuration.');
   }
 };
 
@@ -86,7 +96,7 @@ module.exports.sendOtp = async (to, otp) => module.exports.sendPasswordResetOtp(
 
 // ─── Subscription: notify farmer (non-critical — never throws) ────────────────
 module.exports.sendSubscriptionNotificationToFarmer = async (farmerEmail, data) => {
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
   try {
     const {
       subscriptionId, customerName, customerEmail, customerPhone,
@@ -125,7 +135,7 @@ module.exports.sendSubscriptionNotificationToFarmer = async (farmerEmail, data) 
 
 // ─── Subscription: confirm to customer (non-critical) ────────────────────────
 module.exports.sendSubscriptionConfirmationToCustomer = async (customerEmail, data) => {
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
   try {
     const {
       subscriptionId, customerName, planName, planType,
@@ -164,7 +174,7 @@ module.exports.sendSubscriptionConfirmationToCustomer = async (customerEmail, da
 
 // ─── Subscription invoice (non-critical) ─────────────────────────────────────
 module.exports.sendSubscriptionInvoice = async (customerEmail, invoiceData) => {
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
   try {
     const {
       subscriptionId, customerName, planName, planType,
