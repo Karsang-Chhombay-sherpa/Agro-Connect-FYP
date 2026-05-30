@@ -2,9 +2,9 @@ import axios from 'axios';
 
 // In production (Vercel), use the Render backend URL.
 // In development, use relative /api paths so Vite proxy handles it.
-const baseURL = import.meta.env.VITE_API_URL
+const baseURL = (import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL
-  : (import.meta.env.DEV ? '' : 'https://agro-connect-fyp.onrender.com');
+  : (import.meta.env.DEV ? '' : 'https://agro-connect-fyp.onrender.com')).replace(/\/$/, '');
 
 const instance = axios.create({
   baseURL,
