@@ -105,7 +105,7 @@ const Header = ({ cart = [], onCartClick }) => {
             Wishlist
           </Link>
           {!user && (
-            <Link to="#" className={styles.navLink} onClick={(e) => { e.preventDefault(); toast.info("About page coming soon!") }}>
+            <Link to="/about" className={styles.navLink}>
               About
             </Link>
           )}

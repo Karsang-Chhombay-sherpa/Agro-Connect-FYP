@@ -29,6 +29,7 @@ import BulkOrders from './components/BulkOrders/BulkOrders';
 import BulkOrderCheckout from './components/Checkout/BulkOrderCheckout';
 import AdminDashboard from './components/AdminDashboard/AdminDashboard';
 import Wishlist from './components/Wishlist/Wishlist';
+import About from './components/About/About';
 
 
 function Dashboard() {
@@ -176,6 +177,7 @@ function App() {
           <Route path="/payment/failure" element={<PaymentFailure />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </div>
     </ErrorBoundary>
